@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
@@ -54,6 +55,8 @@ public class MainActivity extends AppCompatActivity
         // Activity being restarted from stopped state
 
         mPlayer = new MediaPlayer();
+        mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
         mPlayer.setLooping(true);
 
         mListView = findViewById(R.id.list_view);
@@ -85,6 +88,7 @@ public class MainActivity extends AppCompatActivity
 
     private void playMedia(File mediaFile) {
         try {
+            mPlayer.reset();
             mPlayer.setDataSource(mediaFile.getAbsolutePath());
             mPlayer.setLooping(true);
             mPlayer.prepare();
