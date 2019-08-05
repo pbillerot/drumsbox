@@ -4,11 +4,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.preference.PreferenceManager;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
@@ -23,12 +21,12 @@ import java.io.File;
 
 public class MainActivity extends AppCompatActivity
         implements AdapterView.OnItemClickListener {
+    private static final String TAG = "MainActivity";
 
     private ListView mListView;
     private MyListAdapter mAdapter;
 
     private MediaPlayer mPlayer;
-    private SharedPreferences mPrefs;
 
     private File mFileCurrent;
     private View mViewCurrent;
@@ -42,16 +40,11 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         // permission
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+        if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
         }
-
-        mPrefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-
-        mPlayer = new MediaPlayer();
-        mPlayer.setLooping(true);
 
     }
 
@@ -59,6 +52,9 @@ public class MainActivity extends AppCompatActivity
     protected void onStart() {
         super.onStart();  // Always call the superclass method first
         // Activity being restarted from stopped state
+
+        mPlayer = new MediaPlayer();
+        mPlayer.setLooping(true);
 
         mListView = findViewById(R.id.list_view);
         mAdapter = new MyListAdapter(this);
@@ -95,7 +91,7 @@ public class MainActivity extends AppCompatActivity
             mPlayer.start();
             mFileCurrent = mediaFile;
         } catch (Exception e) {
-            Log.d(this.getLocalClassName(), e.getMessage());
+            Log.d(TAG, e.getMessage());
             e.printStackTrace();
         }
 
@@ -123,6 +119,34 @@ public class MainActivity extends AppCompatActivity
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();  // Always call the superclass method first
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();  // Always call the superclass method first
+        if ( mPlayer.isPlaying()) {
+            mPlayer.stop();
+        }
+        mPlayer.release();
+        mPlayer = null;
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();  // Always call the superclass method first
+
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();  // Always call the superclass method first
     }
 
 }

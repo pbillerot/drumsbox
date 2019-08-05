@@ -1,22 +1,29 @@
 package fr.pbillerot.drumsbox;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Environment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
 import java.io.File;
+import java.util.ArrayList;
 
 public class MyListAdapter extends BaseAdapter {
+    private static final String TAG = "MyListAdapter";
     private Context mContext;
 
-    private File[] mFiles;
+    private ArrayList<File> mFiles = new ArrayList<>();
     private SharedPreferences mPrefs;
 
     // Constructor
@@ -26,18 +33,27 @@ public class MyListAdapter extends BaseAdapter {
         mPrefs = PreferenceManager.getDefaultSharedPreferences(c);
         // Lecture des médias
         String path = Environment.getExternalStorageDirectory() + mPrefs.getString("pref_folder", "");
-        File root = new File(path);
-
-        mFiles = root.listFiles();
+        try {
+            File root = new File(path);
+            File[] listFiles = root.listFiles();
+            for (int i=0; i<listFiles.length; i++) {
+                if ( listFiles[i].isFile() ) {
+                    mFiles.add(listFiles[i]);
+                }
+            }
+        } catch (Exception e) {
+            Log.d(TAG, e.getMessage());
+            e.printStackTrace();
+        }
     }
     @Override
     public int getCount() {
-        return mFiles.length;
+        return mFiles == null ? 0 : mFiles.size();
     }
 
     @Override
     public Object getItem(int position) {
-        return mFiles[position];
+        return mFiles.get(position);
     }
 
     @Override
