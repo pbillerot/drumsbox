@@ -11,8 +11,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.os.Bundle;
 import android.os.Environment;
@@ -30,17 +28,9 @@ public class MainActivity extends AppCompatActivity
         implements AdapterView.OnItemClickListener {
     private static final String TAG = "MainActivity";
 
-    private ArrayList<File> mFiles = new ArrayList<>();
-
-    private SharedPreferences mPrefs;
-
-    private ListView mListView;
-    private MyListAdapter mAdapter;
-
     private SoundPool mSoundPool;
-    private int mCurrentPlayingPosition = -1;
+    private int mStreamId = -1;
     private View mViewCurrent;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,15 +54,16 @@ public class MainActivity extends AppCompatActivity
         super.onStart();  // Always call the superclass method first
         // Activity being restarted from stopped state
 
-        mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        SharedPreferences mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         // Lecture des médias
+        ArrayList<File> files = new ArrayList<>();
         String path = Environment.getExternalStorageDirectory() + mPrefs.getString("pref_folder", "");
         try {
             File root = new File(path);
             File[] listFiles = root.listFiles();
             for (int i=0; i<listFiles.length; i++) {
                 if ( listFiles[i].isFile() ) {
-                    mFiles.add(listFiles[i]);
+                    files.add(listFiles[i]);
                 }
             }
         } catch (Exception e) {
@@ -80,10 +71,10 @@ public class MainActivity extends AppCompatActivity
             e.printStackTrace();
         }
 
-        mListView = findViewById(R.id.list_view);
-        mAdapter = new MyListAdapter(this, mFiles);
-        mListView.setAdapter(mAdapter);
-        mListView.setOnItemClickListener(this);
+        ListView listView = findViewById(R.id.list_view);
+        MyListAdapter adapter = new MyListAdapter(this, files);
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener(this);
 
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_GAME)
@@ -95,7 +86,8 @@ public class MainActivity extends AppCompatActivity
 
         mSoundPool = builder.build();
 
-        for( File file: mFiles) {
+        // Remplissage du pool de sounds
+        for( File file: files) {
             mSoundPool.load(file.getAbsolutePath(), 1);
         }
 
@@ -103,7 +95,7 @@ public class MainActivity extends AppCompatActivity
         this.mSoundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
             @Override
             public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
-                Log.d(TAG, "onLoadComplete");
+                Log.d(TAG, "onLoadComplete of " + sampleId);
             }
         });
 
@@ -111,16 +103,21 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        if ( mCurrentPlayingPosition != -1 ) {
+        if ( mStreamId != -1 ) {
+            // Visuel : on supprime la surbrillance de la view du media en cours
+            // ainsi que la ligne de la view qui vient d'être sélectionnée
+            // -> au final aucune ligne n'est sélectionnée
             mViewCurrent.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
-            mSoundPool.stop(mCurrentPlayingPosition+1);
-            mCurrentPlayingPosition = -1;
+            view.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
+            // On arrête le media en cours
+            mSoundPool.stop(mStreamId);
+            mStreamId = -1;
         } else {
-            mViewCurrent = view;
+            // Visuel : on met en surbrillance la ligne de la view sélectionnée
             view.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary));
-
-            mSoundPool.play(position+1, 1, 1, 1, -1, 1f);
-            mCurrentPlayingPosition = position;
+            mViewCurrent = view;
+            // On démarre le le media
+            mStreamId = mSoundPool.play(position+1, 1, 1, 1, -1, 1f);
         }
     }
 
@@ -138,7 +135,7 @@ public class MainActivity extends AppCompatActivity
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
+        // Démarrage de l'activité associé au menu
         if (id == R.id.action_settings) {
             Intent is = new Intent(MainActivity.this, SettingsActivity.class);
             startActivity(is);
@@ -149,30 +146,16 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();  // Always call the superclass method first
-
-    }
-
-    @Override
     protected void onStop() {
         super.onStop();  // Always call the superclass method first
-        if ( mCurrentPlayingPosition != -1) {
-            mSoundPool.stop(mCurrentPlayingPosition+1);
+        // Arrêt du media en cours
+        // suivi de la suppression du pool de media
+        // le pool sera recré lors de la mise en avant plan de l'activité dans onStart()
+        if ( mStreamId != -1) {
+            mSoundPool.stop(mStreamId +1);
         }
         mSoundPool.release();
         mSoundPool = null;
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();  // Always call the superclass method first
-
-    }
-
-    @Override
-    protected void onRestart() {
-        super.onRestart();  // Always call the superclass method first
     }
 
 }
