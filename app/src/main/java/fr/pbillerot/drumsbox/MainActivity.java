@@ -4,13 +4,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.SoundPool;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,18 +24,23 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 import java.io.File;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity
         implements AdapterView.OnItemClickListener {
     private static final String TAG = "MainActivity";
 
+    private ArrayList<File> mFiles = new ArrayList<>();
+
+    private SharedPreferences mPrefs;
+
     private ListView mListView;
     private MyListAdapter mAdapter;
 
-    private MediaPlayer mPlayer;
-
-    private File mFileCurrent;
+    private SoundPool mSoundPool;
+    private int mCurrentPlayingPosition = -1;
     private View mViewCurrent;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,51 +64,64 @@ public class MainActivity extends AppCompatActivity
         super.onStart();  // Always call the superclass method first
         // Activity being restarted from stopped state
 
-        mPlayer = new MediaPlayer();
-        mPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
-        mPlayer.setLooping(true);
-
-        mListView = findViewById(R.id.list_view);
-        mAdapter = new MyListAdapter(this);
-        mListView.setAdapter(mAdapter);
-        mListView.setOnItemClickListener(this);
-
-    }
-
-    @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        if ( mPlayer.isPlaying()) {
-            mPlayer.pause();
-            mViewCurrent.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
-            view.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
-        } else {
-            File file = (File) parent.getItemAtPosition(position);
-            if (file == mFileCurrent) {
-                mPlayer.start();
-            } else {
-                mPlayer.reset();
-                mViewCurrent = view;
-                playMedia(file);
-            }
-            mViewCurrent = view;
-            view.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary));
-        }
-    }
-
-    private void playMedia(File mediaFile) {
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        // Lecture des médias
+        String path = Environment.getExternalStorageDirectory() + mPrefs.getString("pref_folder", "");
         try {
-            mPlayer.reset();
-            mPlayer.setDataSource(mediaFile.getAbsolutePath());
-            mPlayer.setLooping(true);
-            mPlayer.prepare();
-            mPlayer.start();
-            mFileCurrent = mediaFile;
+            File root = new File(path);
+            File[] listFiles = root.listFiles();
+            for (int i=0; i<listFiles.length; i++) {
+                if ( listFiles[i].isFile() ) {
+                    mFiles.add(listFiles[i]);
+                }
+            }
         } catch (Exception e) {
             Log.d(TAG, e.getMessage());
             e.printStackTrace();
         }
 
+        mListView = findViewById(R.id.list_view);
+        mAdapter = new MyListAdapter(this, mFiles);
+        mListView.setAdapter(mAdapter);
+        mListView.setOnItemClickListener(this);
+
+        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_GAME)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build();
+
+        SoundPool.Builder builder= new SoundPool.Builder();
+        builder.setAudioAttributes(audioAttributes).setMaxStreams(1);
+
+        mSoundPool = builder.build();
+
+        for( File file: mFiles) {
+            mSoundPool.load(file.getAbsolutePath(), 1);
+        }
+
+        // When Sound Pool load complete.
+        this.mSoundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+            @Override
+            public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
+                Log.d(TAG, "onLoadComplete");
+            }
+        });
+
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        if ( mCurrentPlayingPosition != -1 ) {
+            mViewCurrent.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
+            mSoundPool.stop(mCurrentPlayingPosition+1);
+            mCurrentPlayingPosition = -1;
+        } else {
+            mViewCurrent = view;
+            view.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary));
+
+            mSoundPool.play(position+1, 1, 1, 1, -1, 1f);
+            mCurrentPlayingPosition = position;
+        }
     }
 
     @Override
@@ -134,12 +157,11 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onStop() {
         super.onStop();  // Always call the superclass method first
-        if ( mPlayer.isPlaying()) {
-            mPlayer.stop();
+        if ( mCurrentPlayingPosition != -1) {
+            mSoundPool.stop(mCurrentPlayingPosition+1);
         }
-        mPlayer.release();
-        mPlayer = null;
-
+        mSoundPool.release();
+        mSoundPool = null;
     }
 
     @Override

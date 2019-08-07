@@ -1,84 +1,38 @@
 package fr.pbillerot.drumsbox;
 
-import android.Manifest;
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.os.Environment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
+import android.widget.ArrayAdapter;
 import android.widget.TextView;
-
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.preference.PreferenceManager;
-
 import java.io.File;
 import java.util.ArrayList;
 
-public class MyListAdapter extends BaseAdapter {
+public class MyListAdapter extends ArrayAdapter<File> {
     private static final String TAG = "MyListAdapter";
-    private Context mContext;
-
-    private ArrayList<File> mFiles = new ArrayList<>();
-    private SharedPreferences mPrefs;
 
     // Constructor
-    public MyListAdapter(Context c) {
-        mContext = c;
+    public MyListAdapter(Context context, ArrayList<File> files) {
+        super(context, 0, files);
 
-        mPrefs = PreferenceManager.getDefaultSharedPreferences(c);
-        // Lecture des médias
-        String path = Environment.getExternalStorageDirectory() + mPrefs.getString("pref_folder", "");
-        try {
-            File root = new File(path);
-            File[] listFiles = root.listFiles();
-            for (int i=0; i<listFiles.length; i++) {
-                if ( listFiles[i].isFile() ) {
-                    mFiles.add(listFiles[i]);
-                }
-            }
-        } catch (Exception e) {
-            Log.d(TAG, e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    @Override
-    public int getCount() {
-        return mFiles == null ? 0 : mFiles.size();
     }
 
-    @Override
-    public Object getItem(int position) {
-        return mFiles.get(position);
-    }
-
-    @Override
-    public long getItemId(int position) {
-        return position;
-    }
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-
+        // Get the data item for this position
+        File file = getItem(position);
+        // Check if an existing view is being reused, otherwise inflate the view
         if (convertView == null) {
-            convertView = LayoutInflater.from(mContext).inflate(R.layout.drums_item, parent, false);
-        }
-
-        ViewHolder viewHolder = (ViewHolder) convertView.getTag();
-        if (viewHolder == null) {
-            viewHolder = new ViewHolder(convertView);
+            convertView = LayoutInflater.from(getContext()).inflate(R.layout.drums_item, parent, false);
+            ViewHolder viewHolder = new ViewHolder(convertView);
             convertView.setTag(viewHolder);
         }
-
-        // Récup du File à afficher
-        File file = (File)getItem(position);
-
-        //il ne reste plus qu'à remplir notre vue
+        // Lookup view for data population
+        ViewHolder viewHolder = (ViewHolder) convertView.getTag();
+        // Populate the data into the template view using the data object
         viewHolder.pathname.setText(file.getName());
-
+        // Return the completed view to render on screen
         return convertView;
     }
 
