@@ -20,6 +20,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public class MainActivity extends AppCompatActivity
     private static final String TAG = "MainActivity";
 
     private SoundPool mSoundPool;
-    private int mStreamId = -1;
+    int mStreamId = -1;
     private View mViewCurrent;
 
     @Override
@@ -46,7 +47,6 @@ public class MainActivity extends AppCompatActivity
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
         }
-
     }
 
     @Override
@@ -57,13 +57,25 @@ public class MainActivity extends AppCompatActivity
         SharedPreferences mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         // Lecture des médias
         ArrayList<File> files = new ArrayList<>();
-        String path = Environment.getExternalStorageDirectory() + mPrefs.getString("pref_folder", "");
         try {
-            File root = new File(path);
-            File[] listFiles = root.listFiles();
-            for (int i=0; i<listFiles.length; i++) {
-                if ( listFiles[i].isFile() ) {
-                    files.add(listFiles[i]);
+            File folderMedia;
+            if ( Environment.isExternalStorageEmulated() ) {
+                // cas de l'émulateur d'Android Studio
+                // /storage/emulated/0/Android/data/your.application.package.appname/files
+                folderMedia = getExternalFilesDir(mPrefs.getString("pref_folder", ""));
+            } else {
+                folderMedia = Environment.getExternalStoragePublicDirectory(mPrefs.getString("pref_folder", ""));
+            }
+            File[] listFiles = folderMedia.listFiles();
+            if ( listFiles != null ) {
+                for (int i = 0; i < listFiles.length; i++) {
+                    if (listFiles[i].isFile()) {
+                        // On ne prend que les fichiers < 1Mo
+                        long size = listFiles[i].length();
+                        if (size < 1000000l) {
+                            files.add(listFiles[i]);
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
@@ -71,34 +83,45 @@ public class MainActivity extends AppCompatActivity
             e.printStackTrace();
         }
 
-        ListView listView = findViewById(R.id.list_view);
-        MyListAdapter adapter = new MyListAdapter(this, files);
-        listView.setAdapter(adapter);
-        listView.setOnItemClickListener(this);
+        if ( files.size() > 0 ) {
+            ListView listView = findViewById(R.id.list_view);
+            MyListAdapter adapter = new MyListAdapter(this, files);
+            listView.setAdapter(adapter);
+            listView.setOnItemClickListener(this);
 
-        AudioAttributes audioAttributes = new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_GAME)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build();
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build();
 
-        SoundPool.Builder builder= new SoundPool.Builder();
-        builder.setAudioAttributes(audioAttributes).setMaxStreams(1);
+            SoundPool.Builder builder= new SoundPool.Builder();
+            builder.setAudioAttributes(audioAttributes).setMaxStreams(1);
 
-        mSoundPool = builder.build();
+            mSoundPool = builder.build();
 
-        // Remplissage du pool de sounds
-        for( File file: files) {
-            mSoundPool.load(file.getAbsolutePath(), 1);
-        }
-
-        // When Sound Pool load complete.
-        this.mSoundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
-            @Override
-            public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
-                Log.d(TAG, "onLoadComplete of " + sampleId);
+            // Remplissage du pool de sounds
+            for( File file: files) {
+                mSoundPool.load(file.getAbsolutePath(), 1);
             }
-        });
 
+            // When Sound Pool load complete.
+            this.mSoundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+                @Override
+                public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
+                    Log.d(TAG, "onLoadComplete of " + sampleId);
+                }
+            });
+
+            Toast.makeText(getApplicationContext()
+                    , "Drumbox Version "  + BuildConfig.VERSION_NAME
+
+                    , Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(getApplicationContext()
+                    , "Drumbox - Files not found"
+                    , Toast.LENGTH_LONG).show();
+
+        }
     }
 
     @Override
@@ -116,7 +139,8 @@ public class MainActivity extends AppCompatActivity
             // Visuel : on met en surbrillance la ligne de la view sélectionnée
             view.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary));
             mViewCurrent = view;
-            // On démarre le le media
+            // On démarre le media
+            // à noter que l'indice des éléments dans le pool commence à 1 (position+1 de la view)
             mStreamId = mSoundPool.play(position+1, 1, 1, 1, -1, 1f);
         }
     }
@@ -151,11 +175,13 @@ public class MainActivity extends AppCompatActivity
         // Arrêt du media en cours
         // suivi de la suppression du pool de media
         // le pool sera recré lors de la mise en avant plan de l'activité dans onStart()
-        if ( mStreamId != -1) {
-            mSoundPool.stop(mStreamId +1);
+        if ( mSoundPool != null ) {
+            if (mStreamId != -1) {
+                mSoundPool.stop(mStreamId + 1);
+            }
+            mSoundPool.release();
+            mSoundPool = null;
         }
-        mSoundPool.release();
-        mSoundPool = null;
     }
 
 }

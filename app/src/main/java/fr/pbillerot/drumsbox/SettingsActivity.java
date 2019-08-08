@@ -20,20 +20,6 @@ public class SettingsActivity extends AppCompatActivity {
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
-//        ListPreference listPreferenceCategory = (ListPreference) findPreference("default_category");
-//        if (listPreferenceCategory != null) {
-//            ArrayList<Locale.Category> categoryList = getCategories();
-//            CharSequence entries[] = new String[categoryList.size()];
-//            CharSequence entryValues[] = new String[categoryList.size()];
-//            int i = 0;
-//            for (Category category : categoryList) {
-//                entries[i] = category.getCategoryName();
-//                entryValues[i] = Integer.toString(i);
-//                i++;
-//            }
-//            listPreferenceCategory.setEntries(entries);
-//            listPreferenceCategory.setEntryValues(entryValues);
-//        }
     }
 
     public static class SettingsFragment extends PreferenceFragmentCompat {

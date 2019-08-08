@@ -10,7 +10,7 @@ import android.widget.TextView;
 import java.io.File;
 import java.util.ArrayList;
 
-public class MyListAdapter extends ArrayAdapter<File> {
+class MyListAdapter extends ArrayAdapter<File> {
     private static final String TAG = "MyListAdapter";
 
     // Constructor
