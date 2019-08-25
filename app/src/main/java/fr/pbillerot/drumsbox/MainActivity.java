@@ -126,16 +126,23 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        if ( mStreamId != -1 ) {
+        if ( mViewCurrent == view ) {
             // Visuel : on supprime la surbrillance de la view du media en cours
-            // ainsi que la ligne de la view qui vient d'être sélectionnée
-            // -> au final aucune ligne n'est sélectionnée
+            // -> aucune ligne n'est sélectionnée
             mViewCurrent.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
             view.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
             // On arrête le media en cours
             mSoundPool.stop(mStreamId);
             mStreamId = -1;
+            mViewCurrent = null;
         } else {
+            if ( mStreamId != -1 ) {
+                // Visuel : on supprime la surbrillance de la view du media en cours
+                mViewCurrent.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
+                view.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
+                // On arrête le media en cours
+                mSoundPool.stop(mStreamId);
+            }
             // Visuel : on met en surbrillance la ligne de la view sélectionnée
             view.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary));
             mViewCurrent = view;
@@ -143,6 +150,23 @@ public class MainActivity extends AppCompatActivity
             // à noter que l'indice des éléments dans le pool commence à 1 (position+1 de la view)
             mStreamId = mSoundPool.play(position+1, 1, 1, 1, -1, 1f);
         }
+//        if ( mStreamId != -1 ) {
+//            // Visuel : on supprime la surbrillance de la view du media en cours
+//            // ainsi que la ligne de la view qui vient d'être sélectionnée
+//            // -> au final aucune ligne n'est sélectionnée
+//            mViewCurrent.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
+//            view.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimaryDark));
+//            // On arrête le media en cours
+//            mSoundPool.stop(mStreamId);
+//            mStreamId = -1;
+//        } else {
+//            // Visuel : on met en surbrillance la ligne de la view sélectionnée
+//            view.setBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary));
+//            mViewCurrent = view;
+//            // On démarre le media
+//            // à noter que l'indice des éléments dans le pool commence à 1 (position+1 de la view)
+//            mStreamId = mSoundPool.play(position+1, 1, 1, 1, -1, 1f);
+//        }
     }
 
     @Override
