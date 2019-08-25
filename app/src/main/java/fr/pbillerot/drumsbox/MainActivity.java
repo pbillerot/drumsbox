@@ -61,7 +61,8 @@ public class MainActivity extends AppCompatActivity
             File folderMedia;
             if ( Environment.isExternalStorageEmulated() ) {
                 // cas de l'émulateur d'Android Studio
-                // /storage/emulated/0/Android/data/your.application.package.appname/files
+                // /storage/emulated/0/Android/data/your.application.package.appname/files/Music
+                // Mettre /Music dans le setting
                 folderMedia = getExternalFilesDir(mPrefs.getString("pref_folder", ""));
             } else {
                 folderMedia = Environment.getExternalStoragePublicDirectory(mPrefs.getString("pref_folder", ""));
