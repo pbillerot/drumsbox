@@ -7,14 +7,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
-import java.io.File;
-import java.util.ArrayList;
+import java.util.List;
 
-class MyListAdapter extends ArrayAdapter<File> {
+class MyListAdapter extends ArrayAdapter<String> {
     private static final String TAG = "MyListAdapter";
 
     // Constructor
-    public MyListAdapter(Context context, ArrayList<File> files) {
+    public MyListAdapter(Context context,List<String> files) {
         super(context, 0, files);
         Log.i(TAG, "Create");
     }
@@ -22,7 +21,7 @@ class MyListAdapter extends ArrayAdapter<File> {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         // Get the data item for this position
-        File file = getItem(position);
+        String file = getItem(position);
         // Check if an existing view is being reused, otherwise inflate the view
         if (convertView == null) {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.drums_item, parent, false);
@@ -33,7 +32,7 @@ class MyListAdapter extends ArrayAdapter<File> {
         // Lookup view for data population
         ViewHolder viewHolder = (ViewHolder) convertView.getTag();
         // Remplissage des éléments de l'item
-        viewHolder.pathname.setText(file.getName());
+        viewHolder.pathname.setText(file);
         // Return the completed view to render on screen
         return convertView;
     }

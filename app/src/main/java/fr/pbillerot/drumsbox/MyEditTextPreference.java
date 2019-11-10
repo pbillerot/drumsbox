@@ -3,6 +3,9 @@ package fr.pbillerot.drumsbox;
 import android.content.Context;
 import android.util.AttributeSet;
 
+/**
+ * non utilisé
+ */
 public class MyEditTextPreference extends androidx.preference.EditTextPreference {
 
     public MyEditTextPreference(Context context, AttributeSet attrs, int defStyle) {

@@ -4,16 +4,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.preference.PreferenceManager;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.SoundPool;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -21,9 +18,8 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
-
-import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity
         implements AdapterView.OnItemClickListener {
@@ -54,39 +50,19 @@ public class MainActivity extends AppCompatActivity
         super.onStart();  // Always call the superclass method first
         // Activity being restarted from stopped state
 
-        SharedPreferences mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        // Lecture des médias
-        ArrayList<File> files = new ArrayList<>();
         try {
-            File folderMedia;
-            if ( Environment.isExternalStorageEmulated() ) {
-                // cas de l'émulateur d'Android Studio
-                // /storage/emulated/0/Android/data/your.application.package.appname/files/Music
-                // Mettre /Music dans le setting
-                folderMedia = getExternalFilesDir(mPrefs.getString("pref_folder", ""));
-            } else {
-                folderMedia = Environment.getExternalStoragePublicDirectory(mPrefs.getString("pref_folder", ""));
-            }
-            File[] listFiles = folderMedia.listFiles();
-            if ( listFiles != null ) {
-                for (int i = 0; i < listFiles.length; i++) {
-                    if (listFiles[i].isFile()) {
-                        // On ne prend que les fichiers < 1Mo
-                        long size = listFiles[i].length();
-                        if (size < 1000000l) {
-                            files.add(listFiles[i]);
-                        }
-                    }
+            // liste des fichiers dans assets
+            String[] assetFiles = getAssets().list("");
+            List<String> listFiles = new ArrayList<String>();
+            // filtrage
+            for ( String assetsFile: assetFiles ) {
+                if ( assetsFile.endsWith(".wav")) {
+                    listFiles.add(assetsFile);
                 }
             }
-        } catch (Exception e) {
-            Log.d(TAG, e.getMessage());
-            e.printStackTrace();
-        }
 
-        if ( files.size() > 0 ) {
             ListView listView = findViewById(R.id.list_view);
-            MyListAdapter adapter = new MyListAdapter(this, files);
+            MyListAdapter adapter = new MyListAdapter(this, listFiles);
             listView.setAdapter(adapter);
             listView.setOnItemClickListener(this);
 
@@ -101,8 +77,8 @@ public class MainActivity extends AppCompatActivity
             mSoundPool = builder.build();
 
             // Remplissage du pool de sounds
-            for( File file: files) {
-                mSoundPool.load(file.getAbsolutePath(), 1);
+            for( String fileName: listFiles) {
+                mSoundPool.load(getAssets().openFd(fileName), 1);
             }
 
             // When Sound Pool load complete.
@@ -113,11 +89,15 @@ public class MainActivity extends AppCompatActivity
                 }
             });
 
+//            Toast.makeText(getApplicationContext()
+//                    , "Drumbox Version "  + BuildConfig.VERSION_NAME
+//                    , Toast.LENGTH_LONG).show();
             Toast.makeText(getApplicationContext()
                     , "Drumbox Version "  + BuildConfig.VERSION_NAME
-
                     , Toast.LENGTH_LONG).show();
-        } else {
+        } catch (Exception e) {
+            Log.d(TAG, e.getMessage());
+            e.printStackTrace();
             Toast.makeText(getApplicationContext()
                     , "Drumbox - Files not found"
                     , Toast.LENGTH_LONG).show();
@@ -173,7 +153,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        //getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
