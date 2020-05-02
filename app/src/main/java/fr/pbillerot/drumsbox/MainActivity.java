@@ -179,7 +179,8 @@ public class MainActivity extends AppCompatActivity
         super.onStop();  // Always call the superclass method first
         // Arrêt du media en cours
         // suivi de la suppression du pool de media
-        // le pool sera recré lors de la mise en avant plan de l'activité dans onStart()
+        // le pool sera recréé lors de la mise en avant plan de l'activité dans onStart()
+/*
         if ( mSoundPool != null ) {
             if (mStreamId != -1) {
                 mSoundPool.stop(mStreamId + 1);
@@ -187,6 +188,7 @@ public class MainActivity extends AppCompatActivity
             mSoundPool.release();
             mSoundPool = null;
         }
+*/
     }
 
 }
